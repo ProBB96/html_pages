@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Web用データ一覧</title>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background-color: #ccffdd;
+  color: black;
+  padding: 20px;
+}
+
+h2 {
+  margin-bottom: 12px;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  background-color: white;
+}
+
+th, td {
+  border: 1px solid #999;
+  padding: 6px 8px;
+  font-size: 14px;
+}
+
+th {
+  background-color: #eeeeee;
+  cursor: pointer;
+  user-select: none;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+tr:nth-child(even):not(.team-row):not(.major-team) {
+  background-color: #f9f9f9;
+}
+
+th.asc::after { content: " ▲"; }
+th.desc::after { content: " ▼"; }
+
+.team-giants { background-color: #FF6600; color: black; }
+.team-swallows { background-color: #99CC00; color: black; }
+.team-baystars { background-color: #00CCFF; color: black; }
+.team-dragons { background-color: #0000FF; color: black; }
+.team-tigers { background-color: #FFFF00; color: black; }
+.team-carp { background-color: #FF0000; color: black; }
+.team-fighters { background-color: #FFCC99; color: black; }
+.team-eagles { background-color: #CC0000; color: black; }
+.team-marines { background-color: #DDDDDD; color: black; }
+.team-lions { background-color: #0066CC; color: black; }
+.team-buffaloes { background-color: #9900CC; color: black; }
+.team-hawks { background-color: #FFCC00; color: black; }
+.team-niigata { background-color: #FFFF99; color: black; }
+.team-shizuoka { background-color: #CCCCFF; color: black; }
+
+.major-team {
+  background-color: #888888;
+  color: black;
+}
+</style>
+</head>
+
+<body>
+
+<h2>データ一覧</h2>
+
+<table id="data-table"></table>
+
+<script>
+const csvUrl =
+  "https://docs.google.com/spreadsheets/d/1LE6-3Ll1S9FbZNrEKEGnrKgJ9KxC9keJTFbxnQQUiO4/gviz/tq?tqx=out:csv&sheet=Web用&range=A1:O125";
+
+const teamClassMap = {
+  "読売ジャイアンツ": "team-giants",
+  "東京ヤクルトスワローズ": "team-swallows",
+  "横浜DeNAベイスターズ": "team-baystars",
+  "中日ドラゴンズ": "team-dragons",
+  "阪神タイガース": "team-tigers",
+  "広島東洋カープ": "team-carp",
+  "北海道日本ハムファイターズ": "team-fighters",
+  "東北楽天ゴールデンイーグルス": "team-eagles",
+  "千葉ロッテマリーンズ": "team-marines",
+  "埼玉西武ライオンズ": "team-lions",
+  "オリックス・バファローズ": "team-buffaloes",
+  "福岡ソフトバンクホークス": "team-hawks",
+  "オイシックス新潟アルビレックスBC": "team-niigata",
+  "ハヤテベンチャーズ静岡": "team-shizuoka"
+};
+
+let headers = [];
+let tableData = [];
+let sortState = {};
+
+fetch(csvUrl)
+  .then(res => res.text())
+  .then(text => {
+    const rows = text.trim().split("\n").map(row =>
+      row.split(",").map(cell =>
+        cell.replace(/^"|"$/g, "")
+      )
+    );
+    headers = rows.shift();
+    tableData = rows;
+    renderTable(headers, tableData);
+  });
+
+function renderTable(headers, rows) {
+  const table = document.getElementById("data-table");
+  table.innerHTML = "";
+
+  const thead = document.createElement("thead");
+  const headRow = document.createElement("tr");
+
+  headers.forEach((header, index) => {
+    const th = document.createElement("th");
+    th.textContent = header;
+    if (sortState[index]) th.classList.add(sortState[index]);
+    th.onclick = () => sortBy(index);
+    headRow.appendChild(th);
+  });
+
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+
+  rows.forEach(row => {
+    const tr = document.createElement("tr");
+    const rowText = row.join(" ");
+
+    if (!rowText.includes(".元")) {
+      let applied = false;
+      for (const team in teamClassMap) {
+        if (rowText.includes(team)) {
+          tr.classList.add(teamClassMap[team], "team-row");
+          applied = true;
+          break;
+        }
+      }
+      if (!applied) {
+        tr.classList.add("major-team");
+      }
+    }
+
+    row.forEach(cell => {
+      const td = document.createElement("td");
+      td.textContent = cell;
+      tr.appendChild(td);
+    });
+
+    tbody.appendChild(tr);
+  });
+
+  table.appendChild(tbody);
+}
+
+function sortBy(index) {
+  const direction = sortState[index] === "asc" ? "desc" : "asc";
+  sortState = { [index]: direction };
+
+  tableData.sort((a, b) => {
+    const x = a[index];
+    const y = b[index];
+    const nx = Number(x);
+    const ny = Number(y);
+
+    if (!isNaN(nx) && !isNaN(ny)) {
+      return direction === "asc" ? nx - ny : ny - nx;
+    }
+    return direction === "asc"
+      ? x.localeCompare(y, "ja")
+      : y.localeCompare(x, "ja");
+  });
+
+  renderTable(headers, tableData);
+}
+</script>
+
+</body>
+</html>

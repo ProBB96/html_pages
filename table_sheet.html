@@ -196,14 +196,26 @@ function sortBy(index) {
     sortState = { [index]: dir };
 
     tableData.sort((a, b) => {
-        const x = a[index];
-        const y = b[index];
+        const x = (a[index] ?? "").trim();
+        const y = (b[index] ?? "").trim();
+
+        const xEmpty = x === "";
+        const yEmpty = y === "";
+
+        // ★ 空白は常に下へ
+        if (xEmpty && !yEmpty) return 1;
+        if (!xEmpty && yEmpty) return -1;
+        if (xEmpty && yEmpty) return 0;
+
         const nx = Number(x);
         const ny = Number(y);
 
+        // 数値比較
         if (!isNaN(nx) && !isNaN(ny)) {
             return dir === "asc" ? nx - ny : ny - nx;
         }
+
+        // 文字列比較
         return dir === "asc"
             ? x.localeCompare(y, "ja")
             : y.localeCompare(x, "ja");
@@ -211,6 +223,7 @@ function sortBy(index) {
 
     renderTable();
 }
+
 </script>
 
 
